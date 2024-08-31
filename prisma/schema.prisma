@@ -8,9 +8,9 @@ generator client {
 }
 
 model User {
-  id            String          @id @default(cuid())
+  id            String    @id @default(cuid())
   name          String?
-  email         String          @unique
+  email         String    @unique
   emailVerified DateTime?
   image         String?
   accounts      Account[]
@@ -57,4 +57,11 @@ model VerificationToken {
   expires    DateTime
 
   @@id([identifier, token])
+}
+
+model Conversation {
+  id        String   @id @unique @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  messages  Json
 }

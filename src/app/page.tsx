@@ -2,10 +2,9 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useChat } from "ai/react";
 import {
   MessageCircle,
-  HelpCircle,
-  Info,
   FileQuestion,
   CreditCard,
   Settings,
@@ -13,35 +12,33 @@ import {
   Menu,
   Sparkles,
   Brain,
-  Lightbulb,
-  Puzzle,
   Send,
 } from "lucide-react";
 import Image from "next/image";
 import { GeistSans } from "geist/font/sans";
 
-type Conversation = {
+interface Message {
+  text: string;
+  sender: "user" | "bot";
+}
+
+interface Conversation {
   id: string;
   title: string;
   date: Date;
-  messages: { text: string; sender: "user" | "bot" }[];
-};
+  messages: Message[];
+}
 
 const LoadingDots = () => {
   return (
     <div className="flex space-x-1">
-      <div
-        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-        style={{ animationDelay: "0s" }}
-      ></div>
-      <div
-        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-        style={{ animationDelay: "0.2s" }}
-      ></div>
-      <div
-        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-        style={{ animationDelay: "0.4s" }}
-      ></div>
+      {[0, 0.2, 0.4].map((delay, index) => (
+        <div
+          key={index}
+          className="w-2 h-2 bg-gray-400 rounded-full animate-loading-dot"
+          style={{ animationDelay: `${delay}s` }}
+        ></div>
+      ))}
     </div>
   );
 };
@@ -60,7 +57,14 @@ export default function Component() {
   const [currentConversation, setCurrentConversation] =
     useState<Conversation | null>(null);
   const [inputMessage, setInputMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  // const [isLoading, setIsLoading] = useState(false);
+
+  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+    api: "/api/ai/chat",
+    body: {
+      conversationId: currentConversation?.id,
+    },
+  });
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
@@ -95,44 +99,6 @@ export default function Component() {
     setConversations(mockConversations);
   }, []);
 
-  const sendMessage = () => {
-    if (inputMessage.trim() && currentConversation) {
-      const updatedConversation: Conversation = {
-        ...currentConversation,
-        messages: [
-          ...currentConversation.messages,
-          { text: inputMessage, sender: "user" },
-        ],
-      };
-      setCurrentConversation(updatedConversation);
-      setConversations(
-        conversations.map((conv) =>
-          conv.id === updatedConversation.id ? updatedConversation : conv
-        )
-      );
-      setInputMessage("");
-      setIsLoading(true);
-      // Simulate API call delay
-      setTimeout(() => {
-        const botResponse = {
-          text: "Thanks for your message! How can I assist you further on this topic?",
-          sender: "bot" as const,
-        };
-        const finalConversation = {
-          ...updatedConversation,
-          messages: [...updatedConversation.messages, botResponse],
-        };
-        setCurrentConversation(finalConversation);
-        setConversations(
-          conversations.map((conv) =>
-            conv.id === finalConversation.id ? finalConversation : conv
-          )
-        );
-        setIsLoading(false);
-      }, 2000);
-    }
-  };
-
   const startNewConversation = () => {
     const newConversation: Conversation = {
       id: Date.now().toString(),
@@ -160,7 +126,7 @@ export default function Component() {
     <div
       className={`flex h-screen bg-gray-100 ${GeistSans.className}`}
       style={{
-        background: "radial-gradient(circle at top left, #390530, #000000)",
+        background: "radial-gradient(circle at center left, #010b49, #000000)",
       }}
     >
       <div
@@ -236,7 +202,10 @@ export default function Component() {
           <Button variant="ghost" size="icon" onClick={toggleSidebar}>
             <Menu className="h-6 w-6" />
           </Button>
-          <Button className="bg-[#08193b] hover:bg-blue-600 text-white">
+          <Button
+            className="bg-[#08193b] hover:bg-blue-600 text-white"
+            onClick={startNewConversation}
+          >
             <Sparkles className="mr-2 h-4 w-4" />
             New Chat
           </Button>
@@ -258,9 +227,9 @@ export default function Component() {
                 <h2 className="text-2xl font-bold mb-4">Welcome to Lumina!</h2>
                 <p className="text-center text-gray-600 max-w-md mb-8">
                   Lumina is your personal AI-powered assistant, ready to help
-                  you navigate your day and provide valuable insights. We're
-                  here to make your life easier. Let's get started on this
-                  exciting journey together!
+                  you navigate your day and provide valuable insights.
+                  We&apos;re here to make your life easier. Let&apos;s get
+                  started on this exciting journey together!
                 </p>
                 <div className="grid grid-cols-1 gap-4  max-w-md">
                   <Button
@@ -281,44 +250,35 @@ export default function Component() {
               </div>
             ) : (
               <div className="space-y-4">
-                {currentConversation.messages.map((message, index) => (
+                {messages.map((message, index) => (
                   <div
                     key={index}
                     className={`flex items-start ${
-                      message.sender === "user"
+                      message.role === "user"
                         ? "justify-end"
                         : "justify-start"
                     }`}
                   >
-                    {message.sender === "bot" && (
-                      <Avatar
-                        src="/image.png"
-                        alt="AI Avatar"
-                      />
+                    {message.role === "assistant" && (
+                      <Avatar src="/image.png" alt="AI Avatar" />
                     )}
                     <div
                       className={`max-w-[70%] rounded-lg p-3 mx-2 ${
-                        message.sender === "user"
+                        message.role === "user"
                           ? "bg-[#08193b] text-white"
                           : "bg-gray-200 text-gray-800"
                       }`}
                     >
-                      {message.text}
+                      {message.content}
                     </div>
-                    {message.sender === "user" && (
-                      <Avatar
-                        src="/user.png"
-                        alt="User Avatar"
-                      />
+                    {message.role === "user" && (
+                      <Avatar src="/user.png" alt="User Avatar" />
                     )}
                   </div>
                 ))}
                 {isLoading && (
                   <div className="flex items-start justify-start">
-                    <Avatar
-                      src="/placeholder.svg?height=32&width=32"
-                      alt="AI Avatar"
-                    />
+                    <Avatar src="/image.png" alt="AI Avatar" />
                     <div className="bg-gray-200 text-gray-800 rounded-lg p-3 mx-2">
                       <LoadingDots />
                     </div>
@@ -327,20 +287,20 @@ export default function Component() {
               </div>
             )}
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center relative">
             <Input
-              className="flex-1 mr-2"
-              placeholder="Tell me what do you want?"
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+              className="w-full pr-12 pl-4 py-6 rounded-full focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-all duration-300"
+              placeholder="Type your message here..."
+              value={input}
+              onChange={handleInputChange}
+              onKeyPress={(e) => e.key === "Enter" && handleSubmit()}
             />
             <Button
               size="icon"
-              className="bg-[#08193b] hover:bg-blue-600 text-white"
-              onClick={sendMessage}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-blue-500 hover:bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center transition-all duration-300 shadow-lg hover:shadow-xl"
+              onClick={handleSubmit}
             >
-              <Send className="h-4 w-4" />
+              <Send className="h-5 w-5" />
             </Button>
           </div>
         </main>
