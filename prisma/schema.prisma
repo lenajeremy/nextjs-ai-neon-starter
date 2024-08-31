@@ -64,4 +64,5 @@ model Conversation {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   messages  Json
+  title     String
 }

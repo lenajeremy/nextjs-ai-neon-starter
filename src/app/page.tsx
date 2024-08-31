@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useChat } from "ai/react";
@@ -16,10 +16,13 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { GeistSans } from "geist/font/sans";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface Message {
-  text: string;
-  sender: "user" | "bot";
+  id: string;
+  content: string;
+  role: "user" | "assistant" | "system";
 }
 
 interface Conversation {
@@ -51,15 +54,60 @@ const Avatar = ({ src, alt }: { src: string; alt: string }) => {
   );
 };
 
+const MarkdownContent = ({ content }: { content: string }) => (
+  <ReactMarkdown
+    remarkPlugins={[remarkGfm]}
+    components={{
+      ul({ children, ...props }) {
+        return <ul className="list-disc list-outside ml-6">{children}</ul>;
+      },
+      ol({ children, ...props }) {
+        return <ol className="list-decimal list-outside ml-6">{children}</ol>;
+      },
+      li({ children, ...props }) {
+        return <li className="list-item my-1.5 text-sm">{children}</li>;
+      },
+      br({ children, ...props }) {
+        return <br {...props} />;
+      },
+      code({ node, inline, className, children, ...props }) {
+        const match = /language-(\w+)/.exec(className || "");
+        return !inline && match ? (
+          <pre className="bg-gray-100 rounded p-2 my-3 overflow-x-auto text-sm">
+            <code className={className} {...props}>
+              {children}
+            </code>
+          </pre>
+        ) : (
+          <code className={`text-sm ${className}`} {...props}>
+            {children}
+          </code>
+        );
+      },
+      p({ children }) {
+        return <p className="text-sm leading-6">{children}</p>;
+      },
+    }}
+  >
+    {content}
+  </ReactMarkdown>
+);
+
 export default function Component() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversation, setCurrentConversation] =
     useState<Conversation | null>(null);
-  const [inputMessage, setInputMessage] = useState("");
-  // const [isLoading, setIsLoading] = useState(false);
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+  const {
+    messages,
+    input,
+    handleInputChange,
+    handleSubmit,
+    isLoading,
+    metadata,
+  } = useChat({
+    initialMessages: currentConversation?.messages || [],
     api: "/api/ai/chat",
     body: {
       conversationId: currentConversation?.id,
@@ -68,38 +116,11 @@ export default function Component() {
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
-  useEffect(() => {
-    // Simulating fetching conversations from an API
-    const mockConversations: Conversation[] = [
-      {
-        id: "1",
-        title: "AI Basics Discussion",
-        date: new Date("2023-06-10"),
-        messages: [
-          { text: "What are the basics of AI?", sender: "user" },
-          {
-            text: "AI, or Artificial Intelligence, refers to systems or machines that mimic human intelligence to perform tasks and can iteratively improve themselves based on the information they collect. The basics of AI include machine learning, neural networks, and deep learning.",
-            sender: "bot",
-          },
-        ],
-      },
-      {
-        id: "2",
-        title: "Machine Learning Query",
-        date: new Date("2023-06-12"),
-        messages: [
-          { text: "Can you explain machine learning?", sender: "user" },
-          {
-            text: "Machine Learning is a subset of AI that focuses on the development of computer programs that can access data and use it to learn for themselves. The process of learning begins with observations or data, such as examples, direct experience, or instruction, in order to look for patterns in data and make better decisions in the future based on the examples we provide.",
-            sender: "bot",
-          },
-        ],
-      },
-    ];
-    setConversations(mockConversations);
-  }, []);
+  const startNewConversation = async () => {
+    const response = await fetch("/api/conversations", { method: "POST" });
+    const c = await response.json();
+    console.log(c)
 
-  const startNewConversation = () => {
     const newConversation: Conversation = {
       id: Date.now().toString(),
       title: "New Conversation",
@@ -114,13 +135,15 @@ export default function Component() {
     setCurrentConversation(conversation);
   };
 
+  const messageContainerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     // Scroll to bottom of message container when new messages are added
-    const messageContainer = document.getElementById("message-container");
-    if (messageContainer) {
-      messageContainer.scrollTop = messageContainer.scrollHeight;
+    if (messageContainerRef.current) {
+      messageContainerRef.current.scrollTop =
+        messageContainerRef.current.scrollHeight;
     }
-  }, [currentConversation?.messages]);
+  }, [messages]);
 
   return (
     <div
@@ -178,6 +201,7 @@ export default function Component() {
           <Button
             variant="ghost"
             className="justify-start mb-2 w-full text-white hover:text-white hover:bg-white/10"
+            // onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           >
             <Settings className="mr-2 h-4 w-4" />
             Settings
@@ -194,11 +218,11 @@ export default function Component() {
 
       {/* Main Content */}
       <div
-        className={`flex-1 flex flex-col transition-all duration-300 ease-in-out overflow-hidden ${
+        className={`flex-1 flex flex-col transition-all duration-300 ease-in-out relative overflow-hidden ${
           sidebarOpen ? "ml-64 m-4 rounded-xl" : "ml-0 m-0 rounded-none"
         }`}
       >
-        <header className="bg-white p-4 flex justify-between items-center border-b">
+        <header className="bg-white p-4 flex justify-between items-center border-b absolute w-full top-0 left-0 right-0">
           <Button variant="ghost" size="icon" onClick={toggleSidebar}>
             <Menu className="h-6 w-6" />
           </Button>
@@ -210,11 +234,11 @@ export default function Component() {
             New Chat
           </Button>
         </header>
-        <main className="flex-1 p-6 flex flex-col bg-white">
-          <div
-            id="message-container"
-            className="flex-1 bg-gray-50 rounded-2xl p-6 mb-4 overflow-y-auto"
-          >
+        <main
+          ref={messageContainerRef}
+          className="flex-1 p-6 pb-0 flex flex-col bg-white mt-[69px] h-[calc(100%-69px)] overflow-scroll scroll-smooth"
+        >
+          <div className="flex-1 bg-gray-50 rounded-2xl p-6 mb-4">
             {!currentConversation ? (
               <div className="flex flex-col items-center justify-center h-full">
                 <Image
@@ -254,28 +278,27 @@ export default function Component() {
                   <div
                     key={index}
                     className={`flex items-start ${
-                      message.role === "user"
-                        ? "justify-end"
-                        : "justify-start"
+                      message.role === "user" ? "justify-end" : "justify-start"
                     }`}
                   >
                     {message.role === "assistant" && (
                       <Avatar src="/image.png" alt="AI Avatar" />
                     )}
                     <div
-                      className={`max-w-[70%] rounded-lg p-3 mx-2 ${
+                      className={`max-w-[75%] rounded-3xl p-3 mx-2 ${
                         message.role === "user"
                           ? "bg-[#08193b] text-white"
                           : "bg-gray-200 text-gray-800"
                       }`}
                     >
-                      {message.content}
+                      <MarkdownContent content={message.content} />
                     </div>
                     {message.role === "user" && (
                       <Avatar src="/user.png" alt="User Avatar" />
                     )}
                   </div>
                 ))}
+
                 {isLoading && (
                   <div className="flex items-start justify-start">
                     <Avatar src="/image.png" alt="AI Avatar" />
@@ -287,7 +310,9 @@ export default function Component() {
               </div>
             )}
           </div>
-          <div className="flex items-center relative">
+        </main>
+        <div className="bg-white p-6 pt-0">
+          <div className="flex items-center relative ">
             <Input
               className="w-full pr-12 pl-4 py-6 rounded-full focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-all duration-300"
               placeholder="Type your message here..."
@@ -297,13 +322,13 @@ export default function Component() {
             />
             <Button
               size="icon"
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-blue-500 hover:bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center transition-all duration-300 shadow-lg hover:shadow-xl"
+              className="absolute right-1.5 top-1/2 transform -translate-y-1/2 bg-blue-500 hover:bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center transition-all duration-300 shadow-lg hover:shadow-xl"
               onClick={handleSubmit}
             >
               <Send className="h-5 w-5" />
             </Button>
           </div>
-        </main>
+        </div>
       </div>
     </div>
   );

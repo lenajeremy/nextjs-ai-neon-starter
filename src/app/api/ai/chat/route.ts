@@ -1,5 +1,6 @@
 import { streamText, convertToCoreMessages } from 'ai'
 import { createAnthropic } from '@ai-sdk/anthropic'
+import { prisma } from '@/prisma'
 
 const anthropic = createAnthropic({
     apiKey: process.env.LLM_KEY
@@ -18,6 +19,12 @@ export async function POST(request: Request) {
     if (!conversationId || messages.length === 0) {
         return Response.json({ error: true, message: "Bad request" }, { status: 400 });
     }
+
+    // Save the conversation messages
+    await prisma.conversation.update({
+        where: { id: conversationId },
+        data: { messages: messages },
+    });
 
     const result = await streamText({
         model: anthropic("claude-3-5-sonnet-20240620", { cacheControl: true }),
