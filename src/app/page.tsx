@@ -99,27 +99,31 @@ export default function Component() {
   const [currentConversation, setCurrentConversation] =
     useState<Conversation | null>(null);
 
-  const {
-    messages,
-    input,
-    handleInputChange,
-    handleSubmit,
-    isLoading,
-    metadata,
-  } = useChat({
-    initialMessages: currentConversation?.messages || [],
-    api: "/api/ai/chat",
-    body: {
-      conversationId: currentConversation?.id,
-    },
-  });
+  const { messages, input, handleInputChange, handleSubmit, isLoading } =
+    useChat({
+      initialMessages: currentConversation?.messages || [],
+      api: "/api/ai/chat",
+      body: {
+        conversationId: currentConversation?.id,
+      },
+    });
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
+  React.useEffect(() => {
+    const getUserConversations = async () => {
+      const res = await fetch("/api/ai/chats/");
+      const conversations = await res.json();
+      console.log(conversations);
+    };
+
+    getUserConversations();
+  }, []);
+
   const startNewConversation = async () => {
-    const response = await fetch("/api/conversations", { method: "POST" });
+    const response = await fetch("/api/ai/chats/new", { method: "POST" });
     const c = await response.json();
-    console.log(c)
+    console.log(c);
 
     const newConversation: Conversation = {
       id: Date.now().toString(),
