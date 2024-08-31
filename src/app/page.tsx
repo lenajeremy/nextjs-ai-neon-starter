@@ -81,9 +81,9 @@ const MarkdownContent = ({ content }: { content: string }) => (
       br({ children, ...props }) {
         return <br {...props} />;
       },
-      code({ node, inline, className, children, ...props }) {
+      code({ node, className, children, ...props }) {
         const match = /language-(\w+)/.exec(className || "");
-        return !inline && match ? (
+        return match ? (
           <pre className="bg-gray-100 rounded p-2 my-3 overflow-x-auto text-sm">
             <code className={className} {...props}>
               {children}
