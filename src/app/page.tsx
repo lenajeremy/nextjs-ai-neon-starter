@@ -18,6 +18,8 @@ import Image from "next/image";
 import { GeistSans } from "geist/font/sans";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useSession } from "next-auth/react";
+import { redirect } from "next/navigation";
 
 interface Message {
   id: string;
@@ -94,6 +96,8 @@ const MarkdownContent = ({ content }: { content: string }) => (
 );
 
 export default function Component() {
+  const session = useSession()
+
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversation, setCurrentConversation] =
@@ -112,7 +116,7 @@ export default function Component() {
 
   React.useEffect(() => {
     const getUserConversations = async () => {
-      const res = await fetch("/api/ai/chats/");
+      const res = await fetch("/api/ai/chats/user");
       const conversations = await res.json();
       console.log(conversations);
     };
@@ -148,6 +152,10 @@ export default function Component() {
         messageContainerRef.current.scrollHeight;
     }
   }, [messages]);
+
+  if (session.status === 'unauthenticated') {
+    return redirect('/auth/signin')
+  }
 
   return (
     <div

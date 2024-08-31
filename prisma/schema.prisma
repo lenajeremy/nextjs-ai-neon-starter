@@ -65,4 +65,5 @@ model Conversation {
   updatedAt DateTime @updatedAt
   messages  Json
   title     String
+  userId    String @default("")
 }
