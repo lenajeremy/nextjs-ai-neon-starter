@@ -1,6 +1,9 @@
 import { streamText, convertToCoreMessages } from 'ai'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { prisma } from '@/prisma'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/auth'
+import { NextResponse } from 'next/server'
 
 const anthropic = createAnthropic({
     apiKey: process.env.LLM_KEY
@@ -12,6 +15,13 @@ type Message = {
 }
 
 export async function POST(request: Request) {
+
+    const session = await getServerSession(authOptions)
+
+    if (!session || !session.user) {
+        return NextResponse.json({ message: "Unathenticated "})
+    }
+    
     const { messages, conversationId } = await request.json() as { conversationId: string, messages: Message[] };
 
     console.log(messages, conversationId)

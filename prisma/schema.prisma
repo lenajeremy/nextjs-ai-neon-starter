@@ -62,8 +62,8 @@ model VerificationToken {
 model Conversation {
   id        String   @id @unique @default(cuid())
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  messages  Json
-  title     String
-  userId    String @default("")
+  updatedAt DateTime @default(now()) @updatedAt
+  messages  Json     @default("[]")
+  title     String   @default("New Conversation")
+  userEmail String   @default("")
 }

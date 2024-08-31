@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useChat } from "ai/react";
+import { signOut } from "next-auth/react";
 import {
   MessageCircle,
   FileQuestion,
@@ -33,6 +34,14 @@ interface Conversation {
   date: Date;
   messages: Message[];
 }
+
+type UserConversationResponse = Array<{
+  createdAt: string,
+  updatedAt: string,
+  id: string,
+  messages: Message[],
+  title: string
+}>
 
 const LoadingDots = () => {
   return (
@@ -103,7 +112,7 @@ export default function Component() {
   const [currentConversation, setCurrentConversation] =
     useState<Conversation | null>(null);
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading } =
+  const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } =
     useChat({
       initialMessages: currentConversation?.messages || [],
       api: "/api/ai/chat",
@@ -117,7 +126,14 @@ export default function Component() {
   React.useEffect(() => {
     const getUserConversations = async () => {
       const res = await fetch("/api/ai/chats/user");
-      const conversations = await res.json();
+      const conversations = await res.json() as UserConversationResponse
+      setConversations(conversations.map(c => ({
+        date: new Date(c.updatedAt),
+        id: c.id,
+        title: c.title,
+        messages: c.messages
+      }
+      )))
       console.log(conversations);
     };
 
@@ -141,6 +157,8 @@ export default function Component() {
 
   const selectConversation = (conversation: Conversation) => {
     setCurrentConversation(conversation);
+    // update the chat
+    setMessages(conversation.messages)
   };
 
   const messageContainerRef = useRef<HTMLDivElement>(null);
@@ -221,6 +239,7 @@ export default function Component() {
           <Button
             variant="ghost"
             className="justify-start w-full text-white hover:text-white hover:bg-white/10"
+            onClick={() => signOut()}
           >
             <LogOut className="mr-2 h-4 w-4" />
             Logout
