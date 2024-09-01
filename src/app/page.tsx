@@ -21,6 +21,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
+import { toast } from "sonner";
 
 interface Message {
   id: string;
@@ -36,12 +37,12 @@ interface Conversation {
 }
 
 type UserConversationResponse = Array<{
-  createdAt: string,
-  updatedAt: string,
-  id: string,
-  messages: Message[],
-  title: string
-}>
+  createdAt: string;
+  updatedAt: string;
+  id: string;
+  messages: Message[];
+  title: string;
+}>;
 
 const LoadingDots = () => {
   return (
@@ -105,36 +106,44 @@ const MarkdownContent = ({ content }: { content: string }) => (
 );
 
 export default function Component() {
-  const session = useSession()
+  const session = useSession();
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversation, setCurrentConversation] =
     useState<Conversation | null>(null);
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } =
-    useChat({
-      initialMessages: currentConversation?.messages || [],
-      api: "/api/ai/chat",
-      body: {
-        conversationId: currentConversation?.id,
-      },
-    });
+  const {
+    messages,
+    input,
+    handleInputChange,
+    handleSubmit,
+    isLoading,
+    setMessages,
+  } = useChat({
+    initialMessages: currentConversation?.messages || [],
+    api: "/api/ai/chat",
+    body: {
+      conversationId: currentConversation?.id,
+    },
+  });
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
   React.useEffect(() => {
     const getUserConversations = async () => {
       const res = await fetch("/api/ai/chats/user");
-      const conversations = await res.json() as UserConversationResponse
-      setConversations(conversations.map(c => ({
-        date: new Date(c.updatedAt),
-        id: c.id,
-        title: c.title,
-        messages: c.messages
-      }
-      )))
-      console.log(conversations);
+      const conversations = (await res.json()) as UserConversationResponse;
+      setConversations(
+        conversations
+          .map((c) => ({
+            date: new Date(c.updatedAt),
+            id: c.id,
+            title: c.title,
+            messages: c.messages,
+          }))
+          .sort((a, b) => (a.date > b.date ? -1 : 1))
+      );
     };
 
     getUserConversations();
@@ -143,14 +152,14 @@ export default function Component() {
   const startNewConversation = async () => {
     const response = await fetch("/api/ai/chats/new", { method: "POST" });
     const c = await response.json();
-    console.log(c);
 
-    const newConversation: Conversation = {
-      id: Date.now().toString(),
-      title: "New Conversation",
-      date: new Date(),
-      messages: [],
+    const newConversation = {
+      id: c.id,
+      title: c.title,
+      date: new Date(c.updatedAt),
+      messages: c.messages,
     };
+
     setConversations([newConversation, ...conversations]);
     setCurrentConversation(newConversation);
   };
@@ -158,10 +167,28 @@ export default function Component() {
   const selectConversation = (conversation: Conversation) => {
     setCurrentConversation(conversation);
     // update the chat
-    setMessages(conversation.messages)
+    setMessages(conversation.messages);
   };
 
   const messageContainerRef = useRef<HTMLDivElement>(null);
+
+  const saveConversation = async (id: string, messages: Message[]) => {
+    try {
+      const res = await fetch(`/api/ai/chats/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ messages }),
+      });
+
+      if (res.ok) {
+        toast.success("Conversation saved");
+      } else {
+        toast.error("Error saving conversation");
+      }
+    } catch (error) {
+      console.error("Error saving conversation:", error);
+      toast.error("Error saving conversation", { description: error.message });
+    }
+  };
 
   useEffect(() => {
     // Scroll to bottom of message container when new messages are added
@@ -169,14 +196,25 @@ export default function Component() {
       messageContainerRef.current.scrollTop =
         messageContainerRef.current.scrollHeight;
     }
-  }, [messages]);
 
-  if (session.status == 'loading') {
-    return <div>Loading...</div>
+    const lastMessage = messages.at(messages.length - 1);
+
+    if (
+      lastMessage &&
+      lastMessage.role == "assistant" &&
+      !isLoading &&
+      currentConversation
+    ) {
+      saveConversation(currentConversation.id, messages as Message[]);
+    }
+  }, [messages, isLoading, currentConversation]);
+
+  if (session.status == "loading") {
+    return <div>Loading...</div>;
   }
 
-  if (session.status === 'unauthenticated') {
-    return redirect('/auth/signin')
+  if (session.status === "unauthenticated") {
+    return redirect("/auth/signin");
   }
 
   return (

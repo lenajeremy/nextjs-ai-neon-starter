@@ -49,14 +49,15 @@ const Github = GithubProvider({
     clientSecret: process.env.AUTH_GITHUB_SECRET || "",
 })
 
-export const authOptions = {
+export const authOptions: AuthOptions = {
     // @ts-ignore
     adapter: PrismaAdapter(prisma),
     providers: [Email, Github],
+    debug: true,
     session: {
         strategy: 'jwt',
     }
-} as AuthOptions
+}
 
 const auth = NextAuth(authOptions)
 

@@ -21,8 +21,6 @@ export async function POST(request: Request) {
     
     const { messages, conversationId } = await request.json() as { conversationId: string, messages: Message[] };
 
-    console.log(messages, conversationId)
-
     if (!conversationId || messages.length === 0) {
         return Response.json({ error: true, message: "Bad request" }, { status: 400 });
     }
