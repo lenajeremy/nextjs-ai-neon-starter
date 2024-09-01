@@ -171,6 +171,10 @@ export default function Component() {
     }
   }, [messages]);
 
+  if (session.status == 'loading') {
+    return <div>Loading...</div>
+  }
+
   if (session.status === 'unauthenticated') {
     return redirect('/auth/signin')
   }
