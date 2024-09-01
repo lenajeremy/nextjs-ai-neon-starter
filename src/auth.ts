@@ -1,9 +1,9 @@
 import NextAuth, { AuthOptions } from 'next-auth'
 import GithubProvider from 'next-auth/providers/github'
-import EmailProvider, {SendVerificationRequestParams} from "next-auth/providers/email";
-import {MailerSend, EmailParams, Sender, Recipient} from "mailersend";
-import {prisma} from "@/prisma"
-import {PrismaAdapter} from "@auth/prisma-adapter";
+import EmailProvider, { SendVerificationRequestParams } from "next-auth/providers/email";
+import { MailerSend, EmailParams, Sender, Recipient } from "mailersend";
+import { prisma } from "@/prisma"
+import { PrismaAdapter } from "@auth/prisma-adapter";
 import { verificationMailHTML, verificationMailText } from '@/utils/mail';
 
 
@@ -13,8 +13,8 @@ const mailerSend = new MailerSend({
 
 
 async function sendVerificationRequest(params: SendVerificationRequestParams): Promise<void | undefined> {
-    const {identifier, url, provider, theme} = params
-    const {host} = new URL(url)
+    const { identifier, url, provider, theme } = params
+    const { host } = new URL(url)
     const recipients = [
         new Recipient(identifier)
     ];
@@ -25,8 +25,8 @@ async function sendVerificationRequest(params: SendVerificationRequestParams): P
         .setTo(recipients)
         .setReplyTo(sender)
         .setSubject(`Sign in to ${host}`)
-        .setHtml(verificationMailHTML({url, host, theme}))
-        .setText(verificationMailText({url, host}));
+        .setHtml(verificationMailHTML({ url, host, theme }))
+        .setText(verificationMailText({ url, host }));
 
 
     const res = await mailerSend.email.send(emailParams);

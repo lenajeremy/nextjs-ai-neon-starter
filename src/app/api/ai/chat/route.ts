@@ -1,13 +1,10 @@
 import { streamText, convertToCoreMessages } from 'ai'
-import { createAnthropic } from '@ai-sdk/anthropic'
+import anthropic from '../setup'
 import { prisma } from '@/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
 import { NextResponse } from 'next/server'
 
-const anthropic = createAnthropic({
-    apiKey: process.env.LLM_KEY
-})
 
 type Message = {
     content: string,
