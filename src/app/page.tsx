@@ -132,7 +132,7 @@ export default function Component() {
     body: {
       conversationId: currentConversation?.id,
     },
-    onError: (e) => toast.error(String(e)),
+    onError: (e) => toast.error(e.message || "Failed to send message. Try again later!"),
     onResponse: (r) => setHasStartedResponse(true),
   });
 
@@ -409,7 +409,7 @@ export default function Component() {
               onKeyUp={(e) => {
                 if (e.key === "Enter" && e.shiftKey) {
                   e.preventDefault();
-                  handleSubmit()
+                  handleSubmit();
                 }
               }}
             />
