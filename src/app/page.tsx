@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useChat } from "ai/react";
 import { signOut } from "next-auth/react";
 import {
@@ -22,6 +21,7 @@ import remarkGfm from "remark-gfm";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Message {
   id: string;
@@ -47,13 +47,18 @@ type UserConversationResponse = Array<{
 const LoadingDots = () => {
   return (
     <div className="flex space-x-1">
-      {[0, 0.2, 0.4].map((delay, index) => (
-        <div
-          key={index}
-          className="w-2 h-2 bg-gray-400 rounded-full animate-loading-dot"
-          style={{ animationDelay: `${delay}s` }}
-        ></div>
-      ))}
+      <div
+        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+        style={{ animationDelay: "0s" }}
+      ></div>
+      <div
+        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+        style={{ animationDelay: "0.2s" }}
+      ></div>
+      <div
+        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+        style={{ animationDelay: "0.4s" }}
+      ></div>
     </div>
   );
 };
@@ -112,6 +117,7 @@ export default function Component() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversation, setCurrentConversation] =
     useState<Conversation | null>(null);
+  const [hasStartedResponse, setHasStartedResponse] = useState(false);
 
   const {
     messages,
@@ -126,6 +132,8 @@ export default function Component() {
     body: {
       conversationId: currentConversation?.id,
     },
+    onError: (e) => toast.error(String(e)),
+    onResponse: (r) => setHasStartedResponse(true),
   });
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
@@ -146,8 +154,10 @@ export default function Component() {
       );
     };
 
-    getUserConversations();
-  }, []);
+    if (session.status == "authenticated") {
+      getUserConversations();
+    }
+  }, [session]);
 
   const startNewConversation = async () => {
     const response = await fetch("/api/ai/chats/new", { method: "POST" });
@@ -209,7 +219,11 @@ export default function Component() {
   }, [messages, isLoading, currentConversation]);
 
   if (session.status == "loading") {
-    return <div>Loading...</div>;
+    return (
+      <div className="h-screen w-screen grid place-items-center">
+        <LoadingDots />
+      </div>
+    );
   }
 
   if (session.status === "unauthenticated") {
@@ -386,22 +400,27 @@ export default function Component() {
           </div>
         </main>
         <div className="bg-white p-6 pt-0">
-          <div className="flex items-center relative ">
-            <Input
-              className="w-full pr-12 pl-4 py-6 rounded-full focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-all duration-300"
+          <form className="flex items-center relative" onSubmit={handleSubmit}>
+            <Textarea
+              className="mt-4"
               placeholder="Type your message here..."
               value={input}
               onChange={handleInputChange}
-              onKeyPress={(e) => e.key === "Enter" && handleSubmit()}
+              onKeyUp={(e) => {
+                if (e.key === "Enter" && e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit()
+                }
+              }}
             />
             <Button
               size="icon"
-              className="absolute right-1.5 top-1/2 transform -translate-y-1/2 bg-blue-500 hover:bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center transition-all duration-300 shadow-lg hover:shadow-xl"
+              className="absolute right-1.5 top-4  transform  bg-blue-500 hover:bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center transition-all duration-300 shadow-lg hover:shadow-xl"
               onClick={handleSubmit}
             >
               <Send className="h-5 w-5" />
             </Button>
-          </div>
+          </form>
         </div>
       </div>
     </div>
