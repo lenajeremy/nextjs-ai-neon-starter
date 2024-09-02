@@ -300,7 +300,7 @@ export default function Component() {
             <Menu className="h-6 w-6" />
           </Button>
           <Button
-            className="bg-[#08193b] hover:bg-blue-600 text-white"
+            className="bg-[#08193b] hover:bg-blue-900 text-white"
             onClick={startNewConversation}
           >
             <Sparkles className="mr-2 h-4 w-4" />
