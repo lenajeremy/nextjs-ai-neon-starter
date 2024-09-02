@@ -2,6 +2,12 @@
 
 This is a NextJS starter template that helps you build AI chat applications with ease. It makes it easy for you to select any AI provider with worrying about technical implementation. This helps you focus on building your product.
 
+## Supports the following AI Providers
+- OpenAI
+- Anthropic
+- Google
+- MistralAI
+
 ## Getting Started
 You can iniailize a new Neon AI template by running the command
 ```bash
