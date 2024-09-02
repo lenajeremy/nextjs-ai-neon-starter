@@ -22,7 +22,7 @@ git clone https://github.com/lenajeremy/nextjs-ai-neon-starter
 npm install
 ```
 
--Create a `.env` file in the root of your project and add the following environment variables:
+- Create a `.env` file in the root of your project and add the following environment variables:
 ```
 DATABASE_URL=your_database_url
 MAILERSEND_API_KEY=your_mailersend_api_key
