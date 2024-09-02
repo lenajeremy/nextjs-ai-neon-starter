@@ -179,13 +179,12 @@ export default function Component() {
         body: JSON.stringify({ messages }),
       });
 
-      if (res.ok) {
-        toast.success("Conversation saved");
-      } else {
+      if (!res.ok) {
         toast.error("Error saving conversation");
       }
     } catch (error) {
       console.error("Error saving conversation:", error);
+      // @ts-ignore
       toast.error("Error saving conversation", { description: error.message });
     }
   };
@@ -232,12 +231,12 @@ export default function Component() {
         <div className="flex items-center mb-8">
           <Image
             src="/image.png"
-            alt="Lumina Logo"
+            alt="NeonChat Logo"
             width={32}
             height={32}
             className="mr-2"
           />
-          <h1 className="text-xl font-bold">Lumina</h1>
+          <h1 className="text-xl font-bold">NeonChat</h1>
         </div>
         <h2 className="text-xs font-semibold mb-2 text-gray-400">
           CONVERSATIONS
@@ -316,14 +315,16 @@ export default function Component() {
               <div className="flex flex-col items-center justify-center h-full">
                 <Image
                   src="/image.png"
-                  alt="Lumina Icon"
+                  alt="NeonChat Icon"
                   width={64}
                   height={64}
                   className="mb-4"
                 />
-                <h2 className="text-2xl font-bold mb-4">Welcome to Lumina!</h2>
+                <h2 className="text-2xl font-bold mb-4">
+                  Welcome to NeonChat!
+                </h2>
                 <p className="text-center text-gray-600 max-w-md mb-8">
-                  Lumina is your personal AI-powered assistant, ready to help
+                  NeonChat is your personal AI-powered assistant, ready to help
                   you navigate your day and provide valuable insights.
                   We&apos;re here to make your life easier. Let&apos;s get
                   started on this exciting journey together!
