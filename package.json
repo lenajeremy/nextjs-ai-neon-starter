@@ -10,9 +10,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^0.0.48",
-    "@ai-sdk/openai": "^0.0.54",
-    "@anthropic-ai/sdk": "^0.27.1",
     "@auth/prisma-adapter": "^2.4.2",
     "@prisma/client": "^5.19.0",
     "@radix-ui/react-avatar": "^1.1.0",
@@ -28,7 +25,6 @@
     "next": "14.2.6",
     "next-auth": "^4.24.7",
     "next-themes": "^0.3.0",
-    "ora": "^8.1.0",
     "react": "^18",
     "react-dom": "^18",
     "react-markdown": "^9.0.1",
